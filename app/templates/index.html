@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Celebrity Recognition</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* General styles */
+      body {
+        font-family: "Poppins", Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        background: linear-gradient(135deg, #6a11cb, #2575fc);
+        color: #fff;
+      }
+
+      header {
+        text-align: center;
+        margin-bottom: 30px;
+      }
+
+      header h1 {
+        font-size: 3rem;
+        font-weight: 700;
+        margin: 0;
+        text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.3);
+      }
+
+      header p {
+        font-size: 1.2rem;
+        font-weight: 400;
+        margin-top: 10px;
+        color: #f1f1f1;
+      }
+
+      .container {
+        background: #ffffff;
+        border-radius: 16px;
+        padding: 40px 50px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        max-width: 500px;
+        width: 90%;
+        text-align: center;
+        color: #333;
+      }
+
+      form {
+        margin-top: 20px;
+      }
+
+      input[type="file"] {
+        border: 2px dashed #6a11cb;
+        border-radius: 12px;
+        padding: 15px;
+        width: 100%;
+        font-size: 1rem;
+        color: #333;
+        background-color: #f8f9fa;
+        margin-bottom: 20px;
+        transition: border-color 0.3s;
+        text-align: center;
+        cursor: pointer;
+      }
+
+      input[type="file"]:hover {
+        border-color: #2575fc;
+      }
+
+      button {
+        display: block;
+        width: 100%;
+        background: linear-gradient(135deg, #2575fc, #6a11cb);
+        color: #ffffff;
+        border: none;
+        border-radius: 8px;
+        padding: 15px;
+        font-size: 1.2rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.3s ease, transform 0.2s;
+      }
+
+      button:hover {
+        background: linear-gradient(135deg, #6a11cb, #2575fc);
+        transform: translateY(-2px);
+      }
+
+      .result {
+        margin-top: 20px;
+        padding: 20px;
+        border: 1px solid #e0e0e0;
+        background: #f9f9f9;
+        border-radius: 12px;
+        font-size: 1rem;
+        color: #444;
+        text-align: left;
+      }
+
+      .result h2 {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 10px;
+      }
+
+      .result p {
+        margin: 5px 0;
+        line-height: 1.6;
+      }
+
+      .result p strong {
+        color: #222;
+      }
+
+      footer {
+        margin-top: 30px;
+        font-size: 0.9rem;
+        color: #eee;
+        text-align: center;
+      }
+
+      footer a {
+        color: #f1f1f1;
+        text-decoration: underline;
+        transition: color 0.2s ease;
+      }
+
+      footer a:hover {
+        color: #ffffff;
+      }
+
+      /* Responsive styles */
+      @media (max-width: 600px) {
+        header h1 {
+          font-size: 2.2rem;
+        }
+
+        .container {
+          padding: 20px;
+        }
+
+        button {
+          font-size: 1rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Celebrity Face Recognition</h1>
+      <p>Identify celebrities with a single upload.</p>
+    </header>
+    <div class="container">
+      <form id="upload-form" enctype="multipart/form-data">
+        <input type="file" name="file" accept="image/*" required />
+        <button type="submit">Upload and Identify</button>
+      </form>
+      <div class="result" id="result"></div>
+    </div>
+    <footer>&copy; 2024 Celebrity Recognition.</footer>
+
+    <script>
+      document
+        .getElementById("upload-form")
+        .addEventListener("submit", async (event) => {
+          event.preventDefault();
+
+          const formData = new FormData(event.target);
+          const response = await fetch("/upload", {
+            method: "POST",
+            body: formData,
+          });
+
+          const resultDiv = document.getElementById("result");
+          if (response.ok) {
+            const data = await response.json();
+            resultDiv.innerHTML = `
+                    <h2>Result</h2>
+                    <p>Celebrity: <strong>${data.celebrity}</strong></p>
+                    <p>Confidence: <strong>${(data.confidence * 100).toFixed(
+                      2
+                    )}%</strong></p>
+                `;
+          } else {
+            const error = await response.json();
+            resultDiv.innerHTML = `<p style="color: red;">Error: ${error.error}</p>`;
+          }
+        });
+    </script>
+  </body>
+</html>

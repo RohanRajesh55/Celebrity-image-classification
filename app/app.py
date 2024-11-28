@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, jsonify
+from flask import Flask, request, render_template, jsonify, send_from_directory
 import os
 import cv2
 from werkzeug.utils import secure_filename
@@ -86,8 +86,19 @@ def upload():
 
     celebrity, confidence = recognize_celebrity_from_face(face, model, label_encoder)
 
-    # Return the result
-    return jsonify({"celebrity": celebrity, "confidence": round(confidence, 2)})
+    # Return the result, including the image path
+    return jsonify({
+        "celebrity": celebrity,
+        "confidence": round(confidence, 2),
+        "image_url": f"/uploads/{filename}"
+    })
+
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    """
+    Serve uploaded files to the frontend.
+    """
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 if __name__ == '__main__':
     app.run(debug=True)

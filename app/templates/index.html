@@ -9,7 +9,6 @@
       rel="stylesheet"
     />
     <style>
-      /* General styles */
       body {
         font-family: "Poppins", Arial, sans-serif;
         margin: 0;
@@ -66,13 +65,8 @@
         color: #333;
         background-color: #f8f9fa;
         margin-bottom: 20px;
-        transition: border-color 0.3s;
         text-align: center;
         cursor: pointer;
-      }
-
-      input[type="file"]:hover {
-        border-color: #2575fc;
       }
 
       button {
@@ -86,71 +80,20 @@
         font-size: 1.2rem;
         font-weight: 600;
         cursor: pointer;
-        transition: background 0.3s ease, transform 0.2s;
-      }
-
-      button:hover {
-        background: linear-gradient(135deg, #6a11cb, #2575fc);
-        transform: translateY(-2px);
       }
 
       .result {
         margin-top: 20px;
         padding: 20px;
-        border: 1px solid #e0e0e0;
         background: #f9f9f9;
         border-radius: 12px;
-        font-size: 1rem;
-        color: #444;
         text-align: left;
       }
 
-      .result h2 {
-        font-size: 1.5rem;
-        font-weight: 600;
-        color: #333;
+      .result img {
+        max-width: 100%;
+        border-radius: 8px;
         margin-bottom: 10px;
-      }
-
-      .result p {
-        margin: 5px 0;
-        line-height: 1.6;
-      }
-
-      .result p strong {
-        color: #222;
-      }
-
-      footer {
-        margin-top: 30px;
-        font-size: 0.9rem;
-        color: #eee;
-        text-align: center;
-      }
-
-      footer a {
-        color: #f1f1f1;
-        text-decoration: underline;
-        transition: color 0.2s ease;
-      }
-
-      footer a:hover {
-        color: #ffffff;
-      }
-
-      /* Responsive styles */
-      @media (max-width: 600px) {
-        header h1 {
-          font-size: 2.2rem;
-        }
-
-        .container {
-          padding: 20px;
-        }
-
-        button {
-          font-size: 1rem;
-        }
       }
     </style>
   </head>
@@ -166,7 +109,7 @@
       </form>
       <div class="result" id="result"></div>
     </div>
-    <footer>&copy; 2024 Celebrity Recognition.</footer>
+    <footer>Celebrity Recognition.</footer>
 
     <script>
       document
@@ -184,12 +127,12 @@
           if (response.ok) {
             const data = await response.json();
             resultDiv.innerHTML = `
-                    <h2>Result</h2>
-                    <p>Celebrity: <strong>${data.celebrity}</strong></p>
-                    <p>Confidence: <strong>${(data.confidence * 100).toFixed(
-                      2
-                    )}%</strong></p>
-                `;
+              <img src="${data.image_url}" alt="Uploaded Image">
+              <p>Celebrity: <strong>${data.celebrity}</strong></p>
+              <p>Confidence: <strong>${(data.confidence * 100).toFixed(
+                2
+              )}%</strong></p>
+            `;
           } else {
             const error = await response.json();
             resultDiv.innerHTML = `<p style="color: red;">Error: ${error.error}</p>`;

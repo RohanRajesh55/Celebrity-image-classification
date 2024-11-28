@@ -102,7 +102,7 @@ y_encoded = le.fit_transform(y)
 
 # Train SVM model
 print("Training model...")
-model = SVC(kernel='linear', probability=True)
+model = SVC(kernel='linear',probability=True)
 model.fit(X, y_encoded)
 
 # Save the trained model and label encoder

@@ -1,116 +1,93 @@
 import os
 import cv2
 import numpy as np
-from sklearn.svm import SVC
-from sklearn.preprocessing import LabelEncoder
 import pickle
+from sklearn.svm import SVC
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.neural_network import MLPClassifier
+from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
 
-# Define paths
-RAW_DATA_DIR = '../datasets/raw/'        # Raw images
-CROPPED_DATA_DIR = '../datasets/cropped/'  # Cropped images to be saved
-MODEL_DIR = '../model/'                  # Folder to save the trained model
+# Get the current directory of this script
+CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 
-# Ensure directories exist
-os.makedirs(CROPPED_DATA_DIR, exist_ok=True)
+# Define paths according to the updated file structure
+CROPPED_DATA_DIR = os.path.join(CURRENT_DIR, '..', 'datasets', 'cropped')
+MODEL_DIR = os.path.join(CURRENT_DIR, '..', 'models', 'saved')
+
+# Ensure the models directory exists
 os.makedirs(MODEL_DIR, exist_ok=True)
 
-# Load Haar cascades for face and eye detection
-face_cascade = cv2.CascadeClassifier('../haarcascades/haarcascade_frontalface_default.xml')
-eye_cascade = cv2.CascadeClassifier('../haarcascades/haarcascade_eye.xml')
-
-# Function to crop the face if at least two eyes are detected
-def get_cropped_image_if_2_eyes(image_path):
-    img = cv2.imread(image_path)
-    if img is None:
-        return None
-    
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    faces = face_cascade.detectMultiScale(gray, 1.3, 5)
-
-    for (x, y, w, h) in faces:
-        roi_gray = gray[y:y + h, x:x + w]
-        roi_color = img[y:y + h, x:x + w]
-        eyes = eye_cascade.detectMultiScale(roi_gray)
-        
-        if len(eyes) >= 2:  # If at least 2 eyes are detected, crop and return
-            return roi_color
-    return None
-
-# Preprocessing: Create cropped images
-count = 1
-for celeb_name in os.listdir(RAW_DATA_DIR):
-    celeb_path = os.path.join(RAW_DATA_DIR, celeb_name)
-    
-    if os.path.isdir(celeb_path):  # Ensure it's a directory
-        print(f"Processing images for: {celeb_name}")
-        
-        # Loop through each image in the celebrity folder
-        for img_name in os.listdir(celeb_path):
-            img_path = os.path.join(celeb_path, img_name)
-            cropped_face = get_cropped_image_if_2_eyes(img_path)
-            
-            if cropped_face is not None:  # Save only valid cropped faces
-                cropped_folder = os.path.join(CROPPED_DATA_DIR, celeb_name)
-                os.makedirs(cropped_folder, exist_ok=True)  # Create subfolder for celebrity
-                
-                cropped_file_name = f"{celeb_name}{count}.jpg"  # Unique name for each file
-                cropped_file_path = os.path.join(cropped_folder, cropped_file_name)
-                
-                success = cv2.imwrite(cropped_file_path, cropped_face)
-                if success:
-                    print(f"Saved cropped image: {cropped_file_path}")
-                else:
-                    print(f"Failed to save cropped image: {cropped_file_path}")
-                
-                count += 1
-
-# Prepare data for model training
+# Prepare data for model training by processing each celebrity's cropped images
 X = []
 y = []
 
-# Loop through cropped directory to get images for training
+print("Loading cropped images for training...")
 for celeb_name in os.listdir(CROPPED_DATA_DIR):
     celeb_folder = os.path.join(CROPPED_DATA_DIR, celeb_name)
-    
     if os.path.isdir(celeb_folder):
-        # Get list of images in the folder
         image_files = os.listdir(celeb_folder)
-        if not image_files:  # Skip empty folders
+        if not image_files:
             print(f"Skipping empty folder: {celeb_folder}")
             continue
-        
         print(f"Processing folder: {celeb_folder}")
         for img_name in image_files:
             img_path = os.path.join(celeb_folder, img_name)
             img = cv2.imread(img_path)
             if img is not None:
-                resized_img = cv2.resize(img, (32, 32))  # Resize to standard size (32x32)
-                X.append(resized_img.flatten())  # Flatten for SVM input
+                # Resize image to a standard size (32x32) and flatten it for classifier input
+                resized_img = cv2.resize(img, (32, 32))
+                X.append(resized_img.flatten())
                 y.append(celeb_name)
 
-# Check if we have any data for training
+# Verify that there is data to train on
 if not X or not y:
-    raise ValueError("No images found for training. Ensure cropped folders contain valid images.")
+    raise ValueError("No images found for training. Please ensure cropped folders contain valid images.")
 
-# Convert data to numpy arrays
+# Convert lists to numpy arrays
 X = np.array(X)
 y = np.array(y)
 
-# Encode labels (celebrity names)
+# Encode labels so that celebrity names become numeric classes
 le = LabelEncoder()
 y_encoded = le.fit_transform(y)
 
-# Train SVM model
-print("Training model...")
-model = SVC(kernel='linear',probability=True)
-model.fit(X, y_encoded)
+# Split the data into training and validation sets
+X_train, X_val, y_train, y_val = train_test_split(
+    X, y_encoded, test_size=0.2, random_state=42, stratify=y_encoded
+)
 
-# Save the trained model and label encoder
+# Define a set of candidate models for comparison
+models = {
+    'SVM': SVC(kernel='linear', probability=True, random_state=42),
+    'RandomForest': RandomForestClassifier(random_state=42),
+    'MLP': MLPClassifier(hidden_layer_sizes=(100,), max_iter=300, random_state=42)
+}
+
+results = {}
+
+# Train each model and evaluate its performance on the validation set
+for name, clf in models.items():
+    print(f"\nTraining {name}...")
+    clf.fit(X_train, y_train)
+    y_pred = clf.predict(X_val)
+    acc = accuracy_score(y_val, y_pred)
+    results[name] = acc
+    print(f"Accuracy for {name}: {acc:.4f}")
+
+# Determine the best-performing model
+best_model_name = max(results, key=results.get)
+best_model = models[best_model_name]
+best_acc = results[best_model_name]
+print(f"\nBest model selected: {best_model_name} with an accuracy of {best_acc:.4f}")
+
+# Save the best model and label encoder
 model_path = os.path.join(MODEL_DIR, 'celebrity_face_recognition_model.pkl')
 le_path = os.path.join(MODEL_DIR, 'label_encoder.pkl')
 
 with open(model_path, 'wb') as model_file:
-    pickle.dump(model, model_file)
+    pickle.dump(best_model, model_file)
 
 with open(le_path, 'wb') as le_file:
     pickle.dump(le, le_file)
